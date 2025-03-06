@@ -1,4 +1,4 @@
-import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
 import { AppThunk, RootState } from ".";
 
@@ -44,13 +44,14 @@ export const { savingCustomer, savingCustomerFailed, customerSaved } =
 const submitCustomer =
   (customerData: SubmitCustomer, cb?: () => void): AppThunk =>
   async (dispatch) => {
-    let data = null;
+    // let data = null;
     try {
       dispatch(savingCustomer());
 
-      data = await customerService.submitCustomer(
+      const data = await customerService.submitCustomer(
         customerData as SubmitCustomer
       );
+      console.warn("data", data);
       dispatch(customerSaved());
       cb && cb();
     } catch (error) {
