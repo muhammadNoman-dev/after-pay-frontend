@@ -1,4 +1,5 @@
 export interface SubmitCustomer {
+  _id?: string;
   name: string;
   CNIC: string;
   accountNo: string;

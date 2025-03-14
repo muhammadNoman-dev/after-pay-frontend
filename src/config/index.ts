@@ -1,4 +1,5 @@
 import * as apiConfig from "./api";
 import envConfig from "./env";
+import * as Utils from "./utils";
 
-export { apiConfig, envConfig };
+export { Utils, apiConfig, envConfig };

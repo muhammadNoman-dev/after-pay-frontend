@@ -1,18 +1,19 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { AppThunk, RootState } from ".";
 
 import { customerService } from "../services";
 
 import { GetCustomer, SubmitCustomer } from "../types/customer.types";
+import { updateState } from "../config/utils";
 
-export interface PostStateInterface {
+export interface CustomerStateInterface {
   list: GetCustomer[];
   loading: boolean;
   saving: boolean;
 }
 
-const initialState: PostStateInterface = {
+const initialState: CustomerStateInterface = {
   list: [],
   loading: false,
   saving: false,
@@ -28,8 +29,26 @@ const customerSlice = createSlice({
     savingCustomerFailed: (customer) => {
       customer.saving = false;
     },
-    customerSaved: (customer) => {
+    customerSaved: (customer, action: PayloadAction<GetCustomer>) => {
       customer.saving = false;
+      const [UpdatedValue] = updateState(customer.list, action.payload, "_id");
+      customer.list = UpdatedValue;
+    },
+    fetchingCustomers: (customer) => {
+      customer.loading = true;
+    },
+    customersFetched: (customer, action: PayloadAction<GetCustomer[]>) => {
+      customer.loading = false;
+      customer.list = action.payload;
+    },
+    customersFetchingFailed: (customer) => {
+      customer.loading = false;
+    },
+    deleteCustomer: (customer, action: PayloadAction<string>) => {
+      const customerIndex = customer.list.findIndex(
+        (list) => list._id === action.payload
+      );
+      customer.list.splice(customerIndex, 1);
     },
   },
 });
@@ -38,38 +57,73 @@ const customerSlice = createSlice({
 export default customerSlice.reducer;
 
 //ACTIONS
-export const { savingCustomer, savingCustomerFailed, customerSaved } =
-  customerSlice.actions;
+export const {
+  savingCustomer,
+  savingCustomerFailed,
+  customerSaved,
+  customersFetched,
+  customersFetchingFailed,
+  fetchingCustomers,
+  deleteCustomer,
+} = customerSlice.actions;
 
 const submitCustomer =
   (customerData: SubmitCustomer, cb?: () => void): AppThunk =>
   async (dispatch) => {
-    // let data = null;
+    let data = null;
     try {
       dispatch(savingCustomer());
-
-      const data = await customerService.submitCustomer(
-        customerData as SubmitCustomer
-      );
-      console.warn("data", data);
-      dispatch(customerSaved());
+      if (customerData._id) {
+        data = await customerService.updateCustomer(
+          customerData._id,
+          customerData
+        );
+      } else {
+        data = await customerService.submitCustomer(
+          customerData as SubmitCustomer
+        );
+      }
+      const { data: customerResponse } = data;
       cb && cb();
+      dispatch(customerSaved(customerResponse.data));
     } catch (error) {
       dispatch(savingCustomerFailed());
     }
   };
 
-export { submitCustomer };
+const getCustomers = (): AppThunk => async (dispatch) => {
+  try {
+    dispatch(fetchingCustomers());
+    const { data: customerResponse } = await customerService.getAllCustomers();
+    dispatch(customersFetched(customerResponse));
+  } catch (error) {
+    dispatch(customersFetchingFailed());
+  }
+};
+
+const deleteCustomerById =
+  (id: string): AppThunk =>
+  async (dispatch) => {
+    try {
+      await customerService.deleteCustomer(id);
+      dispatch(deleteCustomer(id));
+    } catch (error) {
+      dispatch(savingCustomerFailed());
+    }
+  };
+
+export { submitCustomer, getCustomers, deleteCustomerById };
 
 //SELECTORS
 const selectCustomerState = (state: RootState) => state.customer;
 
-const posts = () => (state: RootState) => selectCustomerState(state).list;
+const allCustomers = () => (state: RootState) =>
+  selectCustomerState(state).list;
 
-const isPostLoading = () => (state: RootState) =>
+const isCustomerLoading = () => (state: RootState) =>
   selectCustomerState(state).loading;
 
-const isPostSaving = () => (state: RootState) =>
+const isCustomerSaving = () => (state: RootState) =>
   selectCustomerState(state).saving;
 
-export { isPostLoading, posts, isPostSaving };
+export { isCustomerLoading, allCustomers, isCustomerSaving };
