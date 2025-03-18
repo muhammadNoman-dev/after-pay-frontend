@@ -10,7 +10,8 @@ export default class CustomerService {
   static getAllCustomers = () =>
     axios.get<Array<GetCustomer>>(`${ROOT_PATH}/getbulk-data`);
 
-  static deleteCustomer = (id: string) => axios.delete(`${ROOT_PATH}/${id}`);
+  static deleteCustomer = (id: string) =>
+    axios.delete(`${ROOT_PATH}/delete/${id}`);
 
   static updateCustomer = (id: string, data: Partial<SubmitCustomer>) =>
     axios.put(`${ROOT_PATH}/${id}`, data);

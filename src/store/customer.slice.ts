@@ -85,7 +85,7 @@ const submitCustomer =
       }
       const { data: customerResponse } = data;
       cb && cb();
-      dispatch(customerSaved(customerResponse.data));
+      dispatch(customerSaved(customerResponse));
     } catch (error) {
       dispatch(savingCustomerFailed());
     }

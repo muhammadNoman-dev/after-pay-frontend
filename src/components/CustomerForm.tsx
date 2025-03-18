@@ -1,32 +1,65 @@
 import { Form, Input, Button, DatePicker } from "antd";
 import { useAppDispatch } from "../hooks";
 import { submitCustomer } from "../store/customer.slice";
-import { SubmitCustomer } from "../types/customer.types";
-import { useEffect } from "react";
+import { GetCustomer, SubmitCustomer } from "../types/customer.types";
+import { useEffect, useState } from "react";
 import { AllCustomer } from ".";
+import moment from "moment";
 
 const FormComponent = () => {
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
 
+  const [idToEdit, setIdToEdit] = useState<GetCustomer | undefined>();
+
   const onFinish = (data: SubmitCustomer) => {
-    dispatch(
-      submitCustomer(
-        {
-          ...data,
-          installmentAmount: Number(data.installmentAmount),
-        },
-        () => {
-          console.warn("reset: ");
-          form.resetFields();
-        }
-      )
-    );
+    if (!idToEdit) {
+      dispatch(
+        submitCustomer(
+          {
+            ...data,
+            installmentAmount: Number(data.installmentAmount),
+          },
+          () => {
+            form.resetFields();
+            setIdToEdit(undefined);
+          }
+        )
+      );
+    } else {
+      dispatch(
+        submitCustomer(
+          {
+            ...data,
+            _id: idToEdit._id,
+            installmentAmount: Number(data.installmentAmount),
+          },
+          () => {
+            form.resetFields();
+            setIdToEdit(undefined);
+          }
+        )
+      );
+    }
   };
 
   useEffect(() => {
     form.setFieldsValue({ installmentFrequency: "Monthly" });
   }, [form]);
+
+  useEffect(() => {
+    if (idToEdit) {
+      form.setFieldsValue({
+        installmentFrequency: "Monthly",
+        name: idToEdit?.name,
+        CNIC: idToEdit.CNIC,
+        accountNo: idToEdit.accountNo,
+        installmentAmount: idToEdit.installmentAmount,
+        fromDate: moment(idToEdit.fromDate), // Convert to moment object
+        toDate: moment(idToEdit.toDate), // Convert to moment object
+      });
+    } else form.resetFields();
+  }, [idToEdit]);
 
   return (
     <>
@@ -125,15 +158,20 @@ const FormComponent = () => {
             </Form.Item>
 
             <Form.Item>
-              <Button type="primary" htmlType="submit">
-                Submit
-              </Button>
+              <div style={{ display: "flex", gap: "20px" }}>
+                <Button type="primary" htmlType="submit">
+                  Submit
+                </Button>
+                <Button type="primary" onClick={() => setIdToEdit(undefined)}>
+                  Reset
+                </Button>
+              </div>
             </Form.Item>
           </Form>
         </div>
       </div>
       <div style={{ display: "flex", flex: "0.5" }}>
-        <AllCustomer />
+        <AllCustomer setIdToEdit={setIdToEdit} />
       </div>
     </>
   );
